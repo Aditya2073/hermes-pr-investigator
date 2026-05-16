@@ -12,5 +12,13 @@ class User(db.Model):
     def check_password(self, password):
         return bcrypt.checkpw(password.encode(), self.password_hash)
 
+    @classmethod
+    def create(cls, data):
+        user = cls(username=data["username"])
+        user.set_password(data["password"])
+        db.session.add(user)
+        db.session.commit()
+        return user
+
     def to_dict(self):
         return {"id": self.id, "username": self.username}

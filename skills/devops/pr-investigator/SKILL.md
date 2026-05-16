@@ -2,35 +2,11 @@
 name: pr-investigator
 description: Autonomous Pull Request investigator that plans, executes, and reports comprehensive code reviews using multi-step agentic reasoning
 version: 1.0.0
-author: Hermes PR Investigator Team
-license: MIT
 metadata:
   hermes:
     tags: [code-review, git, github, automation, devops]
     category: devops
     requires_toolsets: [terminal, file, web]
-    config:
-      - key: pr_investigator.default_repo
-        description: Default repository to investigate when no full URL is provided
-        default: ""
-        prompt: Default GitHub repository (owner/repo format)
-      - key: pr_investigator.max_files_to_read
-        description: Maximum number of modified files to read in full per investigation
-        default: "20"
-        prompt: Max files to read per PR investigation
-      - key: pr_investigator.test_timeout
-        description: Timeout in seconds for test execution
-        default: "300"
-        prompt: Test execution timeout (seconds)
-      - key: pr_investigator.report_format
-        description: Output report format
-        default: markdown
-        prompt: Report format (markdown or json)
-required_environment_variables:
-  - name: GITHUB_TOKEN
-    prompt: GitHub Personal Access Token
-    help: Create one at https://github.com/settings/tokens with 'repo' scope
-    required_for: fetching PR data from GitHub API
 ---
 
 # PR Investigator
