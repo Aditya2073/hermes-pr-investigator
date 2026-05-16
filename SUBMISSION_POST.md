@@ -125,7 +125,7 @@ The final output is a structured markdown report posted as a PR comment:
 
 ## Code
 
-**Repository**: [github.com/yourusername/hermes-pr-investigator](https://github.com/yourusername/hermes-pr-investigator)
+**Repository**: [github.com/Aditya2073/hermes-pr-investigator](https://github.com/Aditya2073/hermes-pr-investigator)
 
 ### Project Structure
 
@@ -209,7 +209,7 @@ Most "AI code review" submissions will be static analyzers or diff summarizers. 
 curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
 
 # Install the skill
-git clone https://github.com/yourusername/hermes-pr-investigator.git
+git clone https://github.com/Aditya2073/hermes-pr-investigator.git
 cd hermes-pr-investigator
 bash install.sh
 

@@ -34,7 +34,7 @@ Most AI code review tools are static diff summarizers — they read the patch on
 ### Quick Install
 
 ```bash
-git clone https://github.com/yourusername/hermes-pr-investigator.git
+git clone https://github.com/Aditya2073/hermes-pr-investigator.git
 cd hermes-pr-investigator
 bash install.sh
 ```
