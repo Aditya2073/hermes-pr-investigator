@@ -1,0 +1,67 @@
+{
+  "risk_assessment": {
+    "risk_level": "High",
+    "findings": [
+      {
+        "severity": "High",
+        "category": "Test Coverage",
+        "message": "Core file modified with auth logic but no tests added for token validation edge cases",
+        "suggestion": "Add tests for expired tokens, malformed tokens, and missing Authorization headers",
+        "file": "src/middleware/auth.py"
+      },
+      {
+        "severity": "High",
+        "category": "Security",
+        "message": "Environment config changed: .env.example",
+        "suggestion": "Review for accidentally committed secrets; ensure JWT_SECRET is properly documented",
+        "file": ".env.example"
+      },
+      {
+        "severity": "Medium",
+        "category": "Security",
+        "message": "Authentication-related file modified: src/middleware/auth.py",
+        "suggestion": "Ensure security best practices are followed; verify token expiration is enforced",
+        "file": "src/middleware/auth.py"
+      }
+    ]
+  },
+  "validation": {
+    "tests": {
+      "pytest": {
+        "success": false,
+        "returncode": 1,
+        "stdout": "FAILED tests/test_auth.py::test_expired_token - AssertionError",
+        "stderr": ""
+      }
+    },
+    "lint": {
+      "ruff": {
+        "success": true,
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "type_check": {
+      "mypy": {
+        "success": true,
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  },
+  "custom_findings": [],
+  "recommendations": [
+    "Address Critical/High severity findings before merging",
+    "Consider adding tests for the changed functionality",
+    "Ensure JWT_SECRET is rotated and not committed to version control"
+  ],
+  "investigation_log": [
+    {"phase": "Discovery & Planning", "completed": true},
+    {"phase": "Deep File Analysis", "completed": true},
+    {"phase": "Validation", "completed": true},
+    {"phase": "Cross-Reference", "completed": true},
+    {"phase": "Report Generation", "completed": true}
+  ]
+}

@@ -1,0 +1,41 @@
+name: Hermes PR Investigator Demo
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  investigate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Hermes Agent
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+      
+      - name: Install PR Investigator Skill
+        run: |
+          mkdir -p ~/.hermes/skills/devops
+          cp -r skills/devops/pr-investigator ~/.hermes/skills/devops/pr-investigator
+          chmod +x ~/.hermes/skills/devops/pr-investigator/scripts/*
+      
+      - name: Run Investigation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          hermes chat --toolsets skills -q \
+            "/pr-investigator ${{ github.event.pull_request.html_url }}" > report.md
+      
+      - name: Comment Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Hermes PR Investigator Report\n\n${report}`
+            });
