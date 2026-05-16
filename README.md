@@ -134,7 +134,28 @@ hermes-pr-investigator/
 
 ## Demo
 
-See the `demo/` directory for a sample repository and example investigation output.
+### Real-World Test: NousResearch/hermes-agent PR #26957
+
+I tested the investigator on a real merged PR from the Hermes Agent repository itself:
+
+**PR**: [fix(acp): replay session history before responding to session/load](https://github.com/NousResearch/hermes-agent/pull/26957)
+
+**What Hermes found autonomously**:
+- Fetched PR metadata and diff via GitHub CLI
+- Checked CI status (23,372 passed, 6 pre-existing failures)
+- Read both changed files (`acp_adapter/server.py`, `tests/acp/test_server.py`)
+- Searched for orphan references to deleted `_schedule_history_replay` helper
+- Verified zero remaining references — clean removal
+
+**Findings**:
+- **Risk**: Low
+- **Critical**: None
+- **Suggestion**: Extract near-identical `try/except` blocks into a DRY helper
+- **Verdict**: "Textbook example of how ACP spec compliance bugs should be diagnosed and fixed"
+
+See the full report: [`demo/real-world-report-pr-26957.md`](demo/real-world-report-pr-26957.md)
+
+### Local Demo
 
 ```bash
 cd demo/sample-repo
@@ -143,6 +164,21 @@ git checkout -b feature/add-validation
 git apply ../sample-diff.patch
 # Then run the investigator on this branch
 ```
+
+## Real-World Results
+
+Tested on [NousResearch/hermes-agent PR #26957](https://github.com/NousResearch/hermes-agent/pull/26957) — a real merged PR:
+
+| Metric | Result |
+|--------|--------|
+| **PR Size** | 2 files, +122/-31 |
+| **Risk Level** | Low |
+| **Critical Issues** | 0 |
+| **Orphan References** | 0 (clean removal confirmed) |
+| **CI Failures** | 6 pre-existing, 0 from PR |
+| **Suggestions** | 1 DRY refactoring opportunity |
+
+Hermes autonomously fetched metadata, read changed files, checked CI logs, searched for deleted helper references, and produced a structured verdict. See [`demo/real-world-report-pr-26957.md`](demo/real-world-report-pr-26957.md).
 
 ## Why Hermes Agent?
 

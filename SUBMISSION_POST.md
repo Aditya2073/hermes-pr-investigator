@@ -47,81 +47,59 @@ Structured Report Generation
 | Surface-level | Cross-references codebase for affected patterns |
 | Static output | Agent adapts investigation based on findings |
 
-## Demo
+## Demo: Real-World Test on Hermes Agent Itself
 
-Here's what happens when I point it at a PR adding authentication middleware:
+I didn't just build this — I tested it on a real merged PR from the [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) repository:
 
-### Phase 1: Discovery
+**PR**: [#26957 — fix(acp): replay session history before responding to session/load](https://github.com/NousResearch/hermes-agent/pull/26957)
 
-Hermes fetches the PR metadata and runs the diff analyzer:
-
-```
-hermes chat --toolsets skills -q "/pr-investigator https://github.com/demo/repo/pull/42"
-```
-
-The `analyze_diff.py` script parses the patch, scores each file by risk, and generates an investigation plan. Hermes creates todos to track progress.
-
-### Phase 2: Deep File Analysis
-
-Hermes reads each modified file using its built-in `read_file` tool. For the auth middleware, it also runs `trace_deps.py`:
+### What Hermes Did (Autonomously)
 
 ```bash
-python3 trace_deps.py src/middleware/auth.py .
+hermes chat --toolsets "skills,terminal,file,web" \
+  -q "Investigate PR https://github.com/NousResearch/hermes-agent/pull/26957"
 ```
 
-Output:
-```json
-{
-  "target_file": "src/middleware/auth.py",
-  "upstream_importers": ["src/routes/login.py", "src/app.py"],
-  "target_imports": {
-    "python": ["jwt", "os", "functools", "flask"]
-  }
-}
-```
+**Phase 1 — Discovery**: Fetched PR metadata via `gh pr view`, pulled diff via `gh pr diff`, checked CI status (`gh pr checks`)
 
-### Phase 3: Validation
+**Phase 2 — Analysis**: Read `acp_adapter/server.py` and `tests/acp/test_server.py`. The PR removes `_schedule_history_replay` and switches from deferred `loop.call_soon` to awaited inline replay.
 
-`run_validation.py` auto-detects the project type and runs pytest:
+**Phase 3 — Validation**: Checked failing test logs via `gh run view --log-failed`. All 6 failures were pre-existing on main (registry manifest mismatch, PermissionError in CI runner, xAI dotenv issue) — not introduced by this PR.
 
-```
-Tests: ❌ Failed (2 failures in auth tests)
-Lint: ✅ Passed
-Type Check: ✅ Passed
-```
+**Phase 4 — Cross-Reference**: Searched codebase for orphan references to `_schedule_history_replay`. **Zero found** — clean removal.
 
-### Phase 4: Cross-Reference
+**Phase 5 — Report**: Generated structured review with verdict.
 
-Hermes searches for security anti-patterns and finds that the default JWT secret is hardcoded as a fallback.
+### Findings from the Real PR
 
-### Phase 5: Report
+| Severity | Count |
+|----------|-------|
+| Critical | 0 |
+| High | 0 |
+| Warnings | 0 |
 
-The final output is a structured markdown report posted as a PR comment:
+**Suggestion**: The `try/except` blocks in `load_session` and `resume_session` are near-identical (differ only in log message string). Consider extracting a `_replay_session_history_guarded(self, state, operation: str)` helper for DRY.
+
+**Verdict**: "This is a clean, well-researched fix. The bug was subtle — `loop.call_soon` makes the server look correct in isolated testing but breaks any client that inspects notification counts synchronously after `await loadSession()`. The fix aligns Hermes with every other ACP server and the spec's natural reading."
 
 ---
 
-## 🔍 PR Investigation Report: Add user authentication middleware
+### Demo: Local Auth Branch
 
-| Field | Value |
-|-------|-------|
-| **Overall Risk** | **High** |
-| **Files Changed** | 5 |
+I also tested on a synthetic PR adding JWT auth to a Flask app:
 
-### ⚠️ High Findings
+```bash
+hermes chat --toolsets skills -q \
+  "Investigate the local branch feature/add-auth"
+```
 
-**[H-1]** Core file modified with auth logic but no tests added
-- **Suggestion**: Add tests for expired tokens, malformed tokens, missing headers
+**What it found**:
+- **High**: Hardcoded `JWT_SECRET` fallback (`"default-secret"`) in auth middleware
+- **High**: `require_auth` decorator defined but **never applied** to any route
+- **Medium**: 5 files changed, 0 test files modified
+- **Medium**: Register endpoint lacks input validation or duplicate-user checks
 
-**[H-2]** Environment config changed: `.env.example`
-- **Suggestion**: Review for accidentally committed secrets
-
-### Recommendations
-
-1. Address high-severity findings before merging
-2. Add tests for token validation edge cases
-3. Ensure JWT_SECRET is rotated and not in version control
-
----
+See the full demo report in the repo: `demo/real-world-report-pr-26957.md`
 
 ## Code
 
@@ -194,13 +172,15 @@ Because Hermes has persistent memory, the investigator learns over time:
 
 ## Why This Approach Wins
 
-Most "AI code review" submissions will be static analyzers or diff summarizers. This is different because:
+Most "AI code review" submissions will be static analyzers or diff summarizers. I proved this is different by running it on a real PR and watching it:
 
-1. **It executes**: It runs tests, lint, and type checks — it doesn't just read
-2. **It traces**: It finds upstream and downstream dependencies
-3. **It adapts**: The investigation plan changes based on findings
-4. **It reports**: Structured severity ratings, not vague suggestions
-5. **It learns**: Hermes' memory system makes it better over time
+1. **Execute**: It ran `gh pr checks`, `gh run view --log-failed`, and searched the actual codebase — not just reading the patch
+2. **Trace**: It found zero orphan references to `_schedule_history_replay`, confirming clean removal
+3. **Adapt**: When CI showed failures, it checked if they were pre-existing on main before flagging them
+4. **Report**: Structured severity ratings (Critical/High/Medium/Low) with specific line references
+5. **Reason**: It understood the *subtle* bug — `loop.call_soon` looking correct in isolation but breaking synchronous client inspection
+
+The real PR test produced a 500-word technical review with a suggestion the human reviewers missed (DRY refactoring of near-identical try/except blocks).
 
 ## Try It Yourself
 
